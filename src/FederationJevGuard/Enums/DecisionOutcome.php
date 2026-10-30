@@ -10,7 +10,7 @@
         case APPLIED = 'APPLIED';
 
         /**
-         * The decision was confident and would have been acted on, the plugin is in dry run or the review was a preview
+         * The decision was confident and would have been acted on, the plugin is in dry run
          */
         case PREVIEWED = 'PREVIEWED';
 
