@@ -10,6 +10,7 @@
     use FederationJevGuard\Classes\Logger;
     use FederationJevGuard\Classes\Questions\ClassificationQuestions;
     use FederationJevGuard\Classes\Reviewers\ImageReviewer;
+    use FederationJevGuard\Classes\TextSignals;
     use FederationJevGuard\Classes\UntrustedContent;
     use FederationJevGuard\Exceptions\ReviewException;
     use FederationJevGuard\Exceptions\SystemOneException;
@@ -108,6 +109,7 @@
             }
 
             $author = $contentScan->getAuthorEntity();
+            TextSignals::clearCache();
             try
             {
                 $evaluation = Evaluator::evaluate(function(Limits $limits, ImageCollector $images) use ($messages, $author, $attachments): array
@@ -119,6 +121,8 @@
                         'messages' => array_values(array_map(fn($evidence, $index) => ContextBuilder::compact([
                             'content_type' => $evidence->getContentType()->value,
                             'text' => ContextBuilder::cut($evidence->getTextContent(), $limits->getTextLength()),
+                            'text_signals' => TextSignals::analyze($evidence->getTextContent(), $limits->getTextLength()),
+                            'mentions' => TextSignals::mentions($evidence->getTextContent(), $author?->getEntity()->getUuid()),
                             'context_claimed' => ContextBuilder::metadata($evidence->getContext(), $limits),
                             'metadata' => ContextBuilder::metadata($evidence->getMetadata(), $limits),
                             'attachments' => self::attachments($attachments[$index] ?? [], $images),
