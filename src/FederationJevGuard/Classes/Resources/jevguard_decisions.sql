@@ -12,6 +12,7 @@ create table jevguard_decisions
     record       varchar(36)                                                          null comment 'Optional. The UUID of the record the decision created, eg; the blacklist record',
     input_hash   char(64)                                                             null comment 'Optional. The SHA-256 of what the decision was made on, the subject is only reviewed again once it changes',
     model        varchar(64)                                                          null comment 'Optional. The model that answered, eg; jev-1.14.0',
+    questions    varchar(64)                                                          null comment 'Optional. The version of the questions the model was asked, eg; 1.0.0+3f2a9c41d0be',
     answers      longtext                                                             null comment 'Optional. Every answer of the model, as JSON',
     input_tokens int       default 0                                                  not null comment 'The input tokens of the requests the decision took',
     created      timestamp default current_timestamp()                                not null comment 'The Timestamp for when the decision was made',
