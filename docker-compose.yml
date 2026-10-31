@@ -1,0 +1,78 @@
+name: federation-jevguard-test
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      # FederationLib (SERVER_ENDPOINT)
+      - "${FEDERATION_PORT:-7000}:7000"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mock-systemone:
+        condition: service_started
+    environment:
+      # FederationLib Configuration
+      - FEDERATION_DATABASE_HOST=mariadb
+      - FEDERATION_DATABASE_PORT=3306
+      - FEDERATION_DATABASE_USERNAME=federation
+      - FEDERATION_DATABASE_PASSWORD=federation
+      - FEDERATION_DATABASE_NAME=federation
+      - FEDERATION_REDIS_ENABLED=true
+      - FEDERATION_REDIS_HOST=redis
+      - FEDERATION_REDIS_PORT=6379
+      - FEDERATION_ACCESS_TOKEN=${FEDERATION_ACCESS_TOKEN:-abcdefghijklmnopqrstuvwxyz123456}
+      # Installed by docker-entrypoint.sh before `federationlib init`, which creates the plugin's tables
+      - REQUIRE_PLUGINS=/opt/federationlib/plugins/net.nosial.federation_jevguard.ncc
+      # The plugins FederationLib loads
+      - FEDERATION_PLUGINS=net.nosial.federation_jevguard
+      # The tests never contact TypeSafe: the plugin uses the mock System One endpoint, which needs no API key like a
+      # self-hosted endpoint. The rest of the plugin's configuration is its default
+      - FEDERATION_JEVGUARD_SYSTEMONE_ENDPOINT=http://mock-systemone:8080/v1/systemone
+
+  # Answers System One requests with fixed answers, see tests/mock-systemone/index.php
+  mock-systemone:
+    image: php:8.5-cli
+    command: php -S 0.0.0.0:8080 /mock/index.php
+    volumes:
+      - ./tests/mock-systemone:/mock:ro
+    ports:
+      # The mock's request log (MOCK_SYSTEMONE_ENDPOINT)
+      - "${MOCK_SYSTEMONE_PORT:-7080}:8080"
+
+  mariadb:
+    image: mariadb:latest
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: federation_root
+      MYSQL_DATABASE: federation
+      MYSQL_USER: federation
+      MYSQL_PASSWORD: federation
+    expose:
+      - "3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  redis:
+    image: redis:alpine
+    command: redis-server
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  mariadb_data:

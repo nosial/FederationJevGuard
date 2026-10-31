@@ -1,11 +1,13 @@
-FROM ghcr.io/nosial/ncc:latest
+FROM ghcr.io/nosial/ncc:dev AS plugin_builder
+WORKDIR /plugin
+COPY . /plugin
+RUN ncc build --configuration release
 
-LABEL org.opencontainers.image.title="FederationJevGuard" \
-      org.opencontainers.image.version="1.0.0" \
-      ncc.package="net.nosial.federation_jevguard"
+FROM ghcr.io/nosial/federationlib:dev AS test
 
-WORKDIR /app
-COPY . /app
+LABEL org.opencontainers.image.title="FederationJevGuard Test" \
+      org.opencontainers.image.description="FederationServer Docker image with FederationJevGuard, for testing only" \
+      org.opencontainers.image.vendor="Nosial"
 
-RUN ncc project install -y && ncc build --configuration=release
-RUN ncc package install --package=target/release/net.nosial.federation_jevguard.ncc -y
+# Installed by docker-entrypoint.sh through REQUIRE_PLUGINS (see docker-compose.yml)
+COPY --from=plugin_builder /plugin/target/release/net.nosial.federation_jevguard.ncc /opt/federationlib/plugins/net.nosial.federation_jevguard.ncc
