@@ -16,6 +16,12 @@
         public const float SIGNAL_YES = 0.7;
         public const float SIGNAL_NO = 0.3;
         public const float INJECTION = 0.7;
+        /**
+         * The probability of spam needed to call content SUSPICIOUS when the model is unsure which kind of spam it is,
+         * whatever the threshold of the action. With three options, nearly any answer that isn't clearly NORMAL adds up
+         * to the scan threshold, eg; MALICIOUS=0.4, SUSPICIOUS=0.3, NORMAL=0.3 is a guess, not spam
+         */
+        public const float MERGED_THRESHOLD = 0.75;
 
         /**
          * Judges the answers
@@ -57,7 +63,7 @@
 
             $flag = $top;
             $probability = $probabilities[$top->value];
-            if($top !== ClassificationFlag::NORMAL && $probabilities[ClassificationFlag::MALICIOUS->value] < $threshold && $spamProbability >= $threshold)
+            if($top !== ClassificationFlag::NORMAL && $probabilities[ClassificationFlag::MALICIOUS->value] < $threshold && $spamProbability >= max($threshold, self::MERGED_THRESHOLD))
             {
                 // Probably spam without being sure which kind, eg; MALICIOUS=0.45, SUSPICIOUS=0.35
                 $flag = ClassificationFlag::SUSPICIOUS;
