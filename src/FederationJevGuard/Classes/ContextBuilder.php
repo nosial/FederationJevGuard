@@ -143,7 +143,7 @@
             $leftOut = 0;
             foreach($evidence as $record)
             {
-                $key = $record->getTextContent() !== null ? hash('sha256', $record->getEntityUuid() . "\0" . $record->getTextContent()) : null;
+                $key = $record->getTextContent() !== null ? hash('sha256', $record->getEntityUuid() . "\0" . TextSignals::fingerprint($record->getTextContent())) : null;
                 if($key !== null && isset($positions[$key]))
                 {
                     $items[$positions[$key]]['times_sent'] = ($items[$positions[$key]]['times_sent'] ?? 1) + 1;
@@ -191,6 +191,8 @@
                 'about' => $entity,
                 'content_type' => $evidence->getContentType()->value,
                 'text' => self::cut($evidence->getTextContent(), $limits->getTextLength()),
+                'text_signals' => TextSignals::analyze($evidence->getTextContent(), $limits->getTextLength()),
+                'mentions' => TextSignals::mentions($evidence->getTextContent(), $evidence->getEntityUuid()),
                 'context_claimed' => self::metadata($evidence->getContext(), $limits),
                 'sent' => self::date($evidence->getCreated()),
                 'note' => self::cut($evidence->getNote(), min($limits->getTextLength(), 1000)),
@@ -480,6 +482,7 @@
         public static function clearCache(): void
         {
             self::$operators = [];
+            TextSignals::clearCache();
         }
 
         /**
