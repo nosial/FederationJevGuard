@@ -148,7 +148,7 @@
          */
         public static function readable(string $text): string
         {
-            $text = (string)preg_replace(self::INVISIBLE, '', $text);
+            $text = self::plainLetters((string)preg_replace(self::INVISIBLE, '', $text));
             if(class_exists(Normalizer::class))
             {
                 $text = Normalizer::normalize($text, Normalizer::FORM_KC) ?: $text;
@@ -157,6 +157,43 @@
             $text = (string)preg_replace('/\s*[\(\[\{]\s*(?:dot|точка)\s*[\)\]\}]\s*/iu', '.', $text);
             $text = (string)preg_replace('/(?<=\w)\s+\.\s+(?=(?:com|net|org|me|io|ru|cn|co|gg|ly|xyz|top|app|link|info|biz|vip|cc|tk|site|online|shop|club)\b)/u', '.', $text);
             return trim((string)preg_replace_callback('/(?<!\S)(?:\p{L}[ \x{3000}._\-]){3,}\p{L}(?!\S)/u', fn(array $match) => (string)preg_replace('/[ \x{3000}._\-]/u', '', $match[0]), $text));
+        }
+
+        /**
+         * Writes styled letters and digits as plain ones: mathematical (eg; "𝐅", "𝓕", "𝔽"), full-width, circled and
+         * squared forms. NFKC does the same and more, but needs PHP's intl extension, which not every server has
+         *
+         * @param string $text The text
+         * @return string The text with plain letters
+         */
+        private static function plainLetters(string $text): string
+        {
+            return (string)preg_replace_callback('/[\x{1D400}-\x{1D6A3}\x{1D7CE}-\x{1D7FF}\x{FF01}-\x{FF5E}\x{24B6}-\x{24E9}\x{1F130}-\x{1F189}]/u', function(array $match): string
+            {
+                $code = mb_ord($match[0], 'UTF-8');
+                return match(true)
+                {
+                    // 13 alphabets of 52 letters, A to Z then a to z
+                    $code >= 0x1D400 && $code <= 0x1D6A3 => self::letter(($code - 0x1D400) % 52),
+                    // 5 sets of the digits 0 to 9
+                    $code >= 0x1D7CE && $code <= 0x1D7FF => (string)(($code - 0x1D7CE) % 10),
+                    $code >= 0xFF01 && $code <= 0xFF5E => chr($code - 0xFEE0),
+                    $code >= 0x24B6 && $code <= 0x24E9 => self::letter($code - 0x24B6),
+                    // Squared, circled negative and squared negative capitals
+                    default => self::letter(($code - 0x1F130) % 26),
+                };
+            }, $text);
+        }
+
+        /**
+         * Returns a letter by its place in the alphabet, capitals first
+         *
+         * @param int $index 0 to 25 for A to Z, 26 to 51 for a to z
+         * @return string The letter
+         */
+        private static function letter(int $index): string
+        {
+            return $index < 26 ? chr(0x41 + $index) : chr(0x61 + $index - 26);
         }
 
         /**
