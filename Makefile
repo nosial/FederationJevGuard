@@ -10,7 +10,7 @@ test: target/release/net.nosial.federation_jevguard.ncc
 	phpunit --configuration phpunit.xml
 
 test-unit: target/release/net.nosial.federation_jevguard.ncc
-	phpunit --configuration phpunit.xml --exclude-group integration,live
+	phpunit --configuration phpunit.xml --exclude-group integration --exclude-group live
 
 test-live: target/release/net.nosial.federation_jevguard.ncc
 	phpunit --configuration phpunit.xml --group live
