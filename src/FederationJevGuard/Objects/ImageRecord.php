@@ -2,6 +2,7 @@
 
     namespace FederationJevGuard\Objects;
 
+    use FederationJevGuard\Classes\Questions\ImageQuestions;
     use FederationLib\Interfaces\SerializableInterface;
 
     class ImageRecord implements SerializableInterface
@@ -55,7 +56,8 @@
          */
         public function getAbuseProbability(): float
         {
-            return count($this->findings) > 0 ? max($this->findings) : 0.0;
+            $findings = array_intersect_key($this->findings, array_flip(ImageQuestions::SPAM_FINDINGS));
+            return count($findings) > 0 ? max($findings) : 0.0;
         }
 
         /**
