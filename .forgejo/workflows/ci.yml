@@ -131,20 +131,61 @@ jobs:
           ncc build --config=release --log-level debug
 
       - name: Download PHPUnit
-        run: wget https://phar.phpunit.de/phpunit-11.3.phar
+        # The same major version as the local runs, the tests use its attributes
+        run: wget -O phpunit.phar https://phar.phpunit.de/phpunit-13.phar
 
+      # The integration tests need the docker test environment (make test-env) and the live tests a System One
+      # endpoint, both run outside of CI
       - name: Run PHPUnit tests
         run: |
           mkdir -p "$PWD/reports"
           chmod 777 "$PWD/reports"
-          php phpunit-11.3.phar --configuration phpunit.xml --log-junit "$PWD/reports/junit.xml" --log-teamcity "$PWD/reports/teamcity" --testdox-html "$PWD/reports/testdox.html" --testdox-text "$PWD/reports/testdox.txt"
+          php phpunit.phar --configuration phpunit.xml --exclude-group integration --exclude-group live --log-junit "$PWD/reports/junit.xml" --log-teamcity "$PWD/reports/teamcity" --testdox-html "$PWD/reports/testdox.html" --testdox-text "$PWD/reports/testdox.txt"
 
       - name: Upload test reports
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: reports
           path: reports
 
+
+
+  # The live tests send the plugin's real questions to TypeSafe's API with the JEVGUARD_LIVE_API_KEY secret. Every run
+  # spends tokens, so they only run on demand (Run workflow) and on releases, never on every push
+  live-test:
+    needs: [release]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/nosial/ncc:latest
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'release'
+    concurrency:
+      group: live-test
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install ncc packages
+        run: |
+          ncc project install --log-level debug -y
+          ncc build --config=release --log-level debug
+
+      - name: Download PHPUnit
+        run: wget -O phpunit.phar https://phar.phpunit.de/phpunit-13.phar
+
+      - name: Run live tests
+        env:
+          JEVGUARD_LIVE_ENDPOINT: https://api.typesafe.ai/v1/systemone
+          JEVGUARD_LIVE_API_KEY: ${{ secrets.JEVGUARD_LIVE_API_KEY }}
+          JEVGUARD_LIVE_MODEL: ${{ vars.JEVGUARD_LIVE_MODEL || 'jev-latest' }}
+        run: |
+          if [ -z "$JEVGUARD_LIVE_API_KEY" ]; then
+            echo "::error::The JEVGUARD_LIVE_API_KEY secret is not set, the live tests would only be skipped"
+            exit 1
+          fi
+          php phpunit.phar --configuration phpunit.xml --group live
 
   release-documentation:
     needs: generate-phpdoc
