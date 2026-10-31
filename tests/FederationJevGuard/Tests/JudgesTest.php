@@ -90,6 +90,12 @@
             $this->assertEqualsWithDelta(0.9, $verdict->getProbability(), 0.001);
         }
 
+        public function testAGuessIsNotSuspicious(): void
+        {
+            $verdict = ClassificationJudge::judge(self::classification(['NORMAL' => 0.3, 'SUSPICIOUS' => 0.3, 'MALICIOUS' => 0.4], signal: 0.8), ClassificationJudge::SCAN_THRESHOLD);
+            $this->assertFalse($verdict->isConfident());
+        }
+
         public function testThresholdsScaleWithTheAction(): void
         {
             $response = self::classification(['NORMAL' => 0.8, 'SUSPICIOUS' => 0.15, 'MALICIOUS' => 0.05], signal: 0.05);
