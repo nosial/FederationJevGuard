@@ -1,0 +1,216 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - '**'
+  release:
+    types: [created]
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/nosial/ncc:latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build project
+        run: |
+          ncc project install --log-level debug -y
+          ncc build --config debug --log-level debug
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug
+          path: target/debug/net.nosial.federation_jevguard.ncc
+
+  release:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/nosial/ncc:latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build project
+        run: |
+          ncc project install --log-level debug -y
+          ncc build --config release --log-level debug
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: target/release/net.nosial.federation_jevguard.ncc
+
+  # Check for phpunit.xml
+  check-phpunit:
+    runs-on: ubuntu-latest
+    outputs:
+      phpunit-exists: ${{ steps.check.outputs.phpunit-exists }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Check for phpunit.xml
+        id: check
+        run: |
+          if [ -f phpunit.xml ]; then
+            echo "phpunit-exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "phpunit-exists=false" >> $GITHUB_OUTPUT
+          fi
+
+  # Check for phpdoc.dist.xml
+  check-phpdoc:
+    runs-on: ubuntu-latest
+    outputs:
+      phpdoc-exists: ${{ steps.check.outputs.phpdoc-exists }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Check for phpdoc.dist.xml
+        id: check
+        run: |
+          if [ -f phpdoc.dist.xml ]; then
+            echo "phpdoc-exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "phpdoc-exists=false" >> $GITHUB_OUTPUT
+          fi
+
+  generate-phpdoc:
+    needs: [release, check-phpdoc]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/nosial/ncc:latest
+    if: needs.check-phpdoc.outputs.phpdoc-exists == 'true'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download PHPDocumentor
+        run: |
+          wget https://phpdoc.org/phpDocumentor.phar
+          chmod +x phpDocumentor.phar
+
+      - name: Generate PHPDoc
+        run: |
+          php phpDocumentor.phar -d src -t docs
+
+      - name: Archive PHPDoc
+        run: |
+          zip -r docs.zip docs
+
+      - name: Upload PHPDoc
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: docs.zip
+
+
+  test:
+    needs: [debug, release, check-phpunit]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/nosial/ncc:latest
+    if: needs.check-phpunit.outputs.phpunit-exists == 'true'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install ncc packages
+        run: |
+          ncc project install --log-level debug -y
+          ncc build --config=release --log-level debug
+
+      - name: Download PHPUnit
+        run: wget https://phar.phpunit.de/phpunit-11.3.phar
+
+      - name: Run PHPUnit tests
+        run: |
+          mkdir -p "$PWD/reports"
+          chmod 777 "$PWD/reports"
+          php phpunit-11.3.phar --configuration phpunit.xml --log-junit "$PWD/reports/junit.xml" --log-teamcity "$PWD/reports/teamcity" --testdox-html "$PWD/reports/testdox.html" --testdox-text "$PWD/reports/testdox.txt"
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: reports
+
+
+  release-documentation:
+    needs: generate-phpdoc
+    permissions: write-all
+    runs-on: ubuntu-latest
+    container:
+      image: php:8.5
+    if: github.event_name == 'release'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download documentation artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: documentation
+          path: documentation
+
+      - name: Upload documentation artifact
+        uses: softprops/action-gh-release@v1
+        with:
+            files: |
+                documentation/*
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+  release-artifacts:
+    needs: [debug, release]
+    permissions: write-all
+    runs-on: ubuntu-latest
+    container:
+      image: php:8.5
+    if: github.event_name == 'release'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download debug artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: debug
+          path: debug
+
+      - name: Upload debug artifact to release
+        uses: softprops/action-gh-release@v1
+        with:
+            files: |
+                debug/*
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release
+          path: release
+
+      - name: Upload release artifact to release
+        uses: softprops/action-gh-release@v1
+        with:
+            files: |
+                release/*
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
