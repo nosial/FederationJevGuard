@@ -2,6 +2,7 @@
 
     namespace FederationJevGuard\Classes\Managers;
 
+    use FederationJevGuard\Classes\QuestionSet;
     use FederationJevGuard\Enums\DecisionOutcome;
     use FederationJevGuard\Enums\SubjectType;
     use FederationJevGuard\Objects\DecisionRecord;
@@ -31,11 +32,13 @@
          * @param string|null $model The model that answered
          * @param array|null $answers Every answer of the model
          * @param int $inputTokens The input tokens of the requests the decision took
+         * @param string|null $questions The version of the questions the model was asked, the version in use when null
+         *                               and a model answered
          * @return string The UUID of the decision
          * @throws InvalidArgumentException If a UUID is invalid
          * @throws DatabaseOperationException If there is an error preparing or executing the SQL statement
          */
-        public static function record(SubjectType $subjectType, string $subject, ?string $entity, DecisionOutcome $outcome, ?string $verdict=null, ?float $probability=null, ?string $reason=null, ?string $record=null, ?string $inputHash=null, ?string $model=null, ?array $answers=null, int $inputTokens=0): string
+        public static function record(SubjectType $subjectType, string $subject, ?string $entity, DecisionOutcome $outcome, ?string $verdict=null, ?float $probability=null, ?string $reason=null, ?string $record=null, ?string $inputHash=null, ?string $model=null, ?array $answers=null, int $inputTokens=0, ?string $questions=null): string
         {
             if(!Validate::uuid($subject) || ($entity !== null && !Validate::uuid($entity)))
             {
@@ -47,6 +50,7 @@
                 $entity = null;
             }
 
+            $questions ??= $model !== null ? QuestionSet::get()->getVersion() : null;
             $uuid = Uuid::v7()->toRfc4122();
             $type = $subjectType->value;
             $outcomeValue = $outcome->value;
@@ -56,7 +60,7 @@
             try
             {
                 $stmt = DatabaseConnection::getConnection()->prepare(
-                    "INSERT INTO jevguard_decisions (uuid, subject_type, subject, entity, outcome, verdict, probability, reason, record, input_hash, model, answers, input_tokens) VALUES (:uuid, :subject_type, :subject, :entity, :outcome, :verdict, :probability, :reason, :record, :input_hash, :model, :answers, :input_tokens)"
+                    "INSERT INTO jevguard_decisions (uuid, subject_type, subject, entity, outcome, verdict, probability, reason, record, input_hash, model, questions, answers, input_tokens) VALUES (:uuid, :subject_type, :subject, :entity, :outcome, :verdict, :probability, :reason, :record, :input_hash, :model, :questions, :answers, :input_tokens)"
                 );
                 $stmt->bindParam(':uuid', $uuid);
                 $stmt->bindParam(':subject_type', $type);
@@ -69,6 +73,7 @@
                 $stmt->bindParam(':record', $record);
                 $stmt->bindParam(':input_hash', $inputHash);
                 $stmt->bindParam(':model', $model);
+                $stmt->bindParam(':questions', $questions);
                 $stmt->bindParam(':answers', $answersJson);
                 $stmt->bindParam(':input_tokens', $inputTokens, PDO::PARAM_INT);
                 $stmt->execute();
