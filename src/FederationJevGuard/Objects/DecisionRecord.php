@@ -19,6 +19,7 @@
         private ?string $record;
         private ?string $inputHash;
         private ?string $model;
+        private ?string $questions;
         private ?array $answers;
         private int $inputTokens;
         private int $created;
@@ -41,6 +42,7 @@
             $this->record = isset($data['record']) ? (string)$data['record'] : null;
             $this->inputHash = isset($data['input_hash']) ? (string)$data['input_hash'] : null;
             $this->model = isset($data['model']) ? (string)$data['model'] : null;
+            $this->questions = isset($data['questions']) ? (string)$data['questions'] : null;
             $answers = $data['answers'] ?? null;
             $this->answers = is_string($answers) ? (json_decode($answers, true) ?: null) : (is_array($answers) ? $answers : null);
             $this->inputTokens = (int)($data['input_tokens'] ?? 0);
@@ -159,6 +161,16 @@
         }
 
         /**
+         * Returns the version of the questions the model was asked, see QuestionSet::getVersion()
+         *
+         * @return string|null The version, null if no model answered or the decision predates it
+         */
+        public function getQuestions(): ?string
+        {
+            return $this->questions;
+        }
+
+        /**
          * Returns every answer of the model
          *
          * @return array|null The answers by question
@@ -208,6 +220,7 @@
                 'record' => $this->record,
                 'input_hash' => $this->inputHash,
                 'model' => $this->model,
+                'questions' => $this->questions,
                 'input_tokens' => $this->inputTokens,
                 'created' => $this->created,
             ];
