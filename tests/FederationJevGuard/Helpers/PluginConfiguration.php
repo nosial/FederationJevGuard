@@ -28,6 +28,7 @@
             'blacklist_max_duration' => '90d',
             'scanning_enabled' => 'true',
             'images_enabled' => 'true',
+            'questions_path' => '',
         ];
 
         public static function apply(array $options=[]): void
