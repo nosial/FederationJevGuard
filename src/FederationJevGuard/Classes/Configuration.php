@@ -21,6 +21,7 @@
         private static bool $dryRun = false;
         private static bool $scanningEnabled = true;
         private static bool $imagesEnabled = true;
+        private static ?string $questionsPath = null;
         /** @var IncidentType[] */
         private static array $concerns = [];
 
@@ -61,6 +62,7 @@
             self::$configuration->setDefault('blacklist.max_duration', '90d', 'FEDERATION_JEVGUARD_BLACKLIST_MAX_DURATION');
             self::$configuration->setDefault('scanning.enabled', true, 'FEDERATION_JEVGUARD_SCANNING_ENABLED');
             self::$configuration->setDefault('images.enabled', true, 'FEDERATION_JEVGUARD_IMAGES_ENABLED');
+            self::$configuration->setDefault('questions.path', null, 'FEDERATION_JEVGUARD_QUESTIONS_PATH');
 
             // Only save if the configuration file does not exist or we're in CLI mode
             if(!file_exists(self::$configuration->getPath()) || php_sapi_name() === 'cli')
@@ -77,6 +79,8 @@
             self::$blacklistConfiguration = new BlacklistConfiguration(self::$configuration->get('blacklist') ?? []);
             self::$scanningEnabled = ConfigurationValues::parseBool(self::$configuration->get('scanning')['enabled'] ?? null, true);
             self::$imagesEnabled = ConfigurationValues::parseBool(self::$configuration->get('images')['enabled'] ?? null, true);
+            $questionsPath = self::$configuration->get('questions')['path'] ?? null;
+            self::$questionsPath = is_string($questionsPath) && trim($questionsPath) !== '' ? trim($questionsPath) : null;
         }
 
         /**
@@ -168,6 +172,22 @@
             }
 
             return self::$imagesEnabled && !extension_loaded('gd');
+        }
+
+        /**
+         * Returns the path of the operator's question file, the questions bundled with the plugin are asked when it's
+         * null or the file is refused (see QuestionSet)
+         *
+         * @return string|null The path, null for the bundled questions
+         */
+        public static function getQuestionsPath(): ?string
+        {
+            if(self::$configuration === null)
+            {
+                self::initialize();
+            }
+
+            return self::$questionsPath;
         }
 
         /**
