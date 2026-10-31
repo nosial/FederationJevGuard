@@ -87,9 +87,10 @@
             ImageManager::storeImage($image->getSha256(), $findings, $evaluation->getResponse()->getModel());
             self::$findings[$image->getSha256()] = new ImageRecord(['sha256' => $image->getSha256(), 'findings' => $findings, 'model' => $evaluation->getResponse()->getModel()]);
 
-            arsort($findings);
-            $top = (string)array_key_first($findings);
-            $probability = $findings[$top];
+            $spamFindings = array_intersect_key($findings, array_flip(ImageQuestions::SPAM_FINDINGS));
+            arsort($spamFindings);
+            $top = (string)array_key_first($spamFindings);
+            $probability = $spamFindings[$top];
             $uuid = DecisionManager::record(
                 subjectType: SubjectType::ATTACHMENT,
                 subject: $attachmentUuid,
