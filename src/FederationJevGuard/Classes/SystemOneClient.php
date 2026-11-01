@@ -142,7 +142,6 @@
             $response = curl_exec($curl);
             $status = (int)curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
             $error = curl_error($curl);
-            curl_close($curl);
 
             if($response === false)
             {
