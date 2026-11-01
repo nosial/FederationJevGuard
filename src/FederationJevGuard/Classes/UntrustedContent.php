@@ -72,10 +72,16 @@
          */
         public static function readScanFile(ScanFile $file, int $maxBytes): ?string
         {
-            $directory = realpath((string)(ini_get('upload_tmp_dir') ?: sys_get_temp_dir()));
+            // Uploaded files are in the upload directory, the files FederationLib retrieves from file URLs in the
+            // temporary directory
+            $directories = array_filter(array_unique([
+                realpath((string)(ini_get('upload_tmp_dir') ?: sys_get_temp_dir())),
+                realpath(sys_get_temp_dir()),
+            ]));
             $path = $file->getPath();
             $real = realpath($path);
-            if($directory === false || $real === false || $real !== $path || !str_starts_with($real, $directory . DIRECTORY_SEPARATOR)
+            if(count($directories) === 0 || $real === false || $real !== $path
+                || !array_any($directories, fn(string $directory) => str_starts_with($real, $directory . DIRECTORY_SEPARATOR))
                 || is_link($path) || !is_file($path) || !is_readable($path) || $file->getSize() > $maxBytes)
             {
                 return null;
