@@ -70,6 +70,14 @@
                     }
                     break;
 
+                case RecordChangeType::REPORT_OPERATOR_ASSIGNED:
+                    $report = $change->getRecord();
+                    if($reviews->isReportsEnabled() && $report instanceof ReportRecord && $report->isOpened() && PluginOperator::isPluginOperator($report->getAssignedOperator()))
+                    {
+                        QueueManager::enqueue(SubjectType::REPORT, $report->getUuid());
+                    }
+                    break;
+
                 case RecordChangeType::EVIDENCE_CREATED:
                     $evidence = $change->getRecord();
                     if($evidence instanceof EvidenceRecord)
