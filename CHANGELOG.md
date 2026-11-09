@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.1] - 2026-11-09
 
-This update introduces several changes to the plugin:
+This update introduces several changes to the plugin
 
 ### Added
  - Assigning an opened report to the `FederationJevGuard` operator now queues it for review (`REPORT_OPERATOR_ASSIGNED`),
