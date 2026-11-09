@@ -38,8 +38,9 @@
         }
 
         /**
-         * Creates or repairs the plugin operator: its name and permissions are restored, but a disabled operator stays
-         * disabled (the soft switch). The database lock serializes simultaneous startups.
+         * Creates or repairs the plugin operator: its name, permissions and bot flag are restored, but a disabled operator
+         * stays disabled (the soft switch) and the automatic assignment of reports stays as the administrators set it
+         * (off when the operator is created). The database lock serializes simultaneous startups.
          *
          * @return void
          * @throws ReviewException If another process kept provisioning the operator
@@ -68,6 +69,7 @@
                         $uuid = OperatorManager::createOperator(self::NAME)->getUuid();
                         DatabaseConnection::setMetadata(MetadataKey::OPERATOR_UUID->value, $uuid);
                         $connection->commit();
+                        OperatorManager::updateConfiguration($uuid, autoAssignReports: false, autoAssignAutomatedReports: false);
                     }
                     catch(PDOException $e)
                     {
@@ -88,7 +90,7 @@
                 }
 
                 OperatorManager::updatePermissions($uuid, client: true, management: true, operator: false);
-                OperatorManager::updateConfiguration($uuid, autoAssignReports: false, autoAssignAutomatedReports: false, isBot: true);
+                OperatorManager::updateConfiguration($uuid, isBot: true);
                 self::$uuid = $uuid;
             }
             finally
