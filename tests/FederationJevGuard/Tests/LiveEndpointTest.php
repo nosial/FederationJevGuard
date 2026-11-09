@@ -67,7 +67,7 @@
             self::$client = new SystemOneClient(self::$configuration);
         }
 
-        private static function ask(array $state, array $questions): SystemOneResponse
+        private static function ask(string|array $state, array $questions): SystemOneResponse
         {
             return self::$client->evaluate($state, $questions);
         }
@@ -88,7 +88,7 @@
 
         public function testAnswersHaveTheirTypes(): void
         {
-            $response = self::ask('I was charged twice for my subscription this month. Please refund the extra charge.', [
+            $response = self::ask(['message' => 'I was charged twice for my subscription this month. Please refund the extra charge.'], [
                 'billing' => new NoulQuestion('Is this message about billing?'),
                 'tone' => new ChoiceQuestion('What is the tone of this message?', ['angry' => 'An upset or hostile message', 'calm' => 'A neutral or polite message', 'excited' => 'An enthusiastic or eager message']),
                 'urgency' => new ScoreQuestion('How urgent is this message?', ['Can wait', 'Needs attention this week', 'Needs attention today']),
