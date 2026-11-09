@@ -190,7 +190,8 @@
         }
 
         /**
-         * Returns the fingerprint of what a report is judged on, it's only reviewed again once it changes
+         * Returns the fingerprint of what a report is judged on, it's only reviewed again once it changes. Handing the
+         * report to the plugin operator counts as a change, so that an operator's assignment is always reviewed once
          *
          * @param ReportRecord $report The report
          * @param EvidenceRecord[] $evidence The evidence of the report
@@ -203,6 +204,11 @@
             foreach($evidence as $record)
             {
                 $parts[] = [$record->getUuid(), $record->getUpdated() ?? $record->getCreated(), count(FileAttachmentManager::getRecordsByEvidence($record->getUuid()))];
+            }
+
+            if(PluginOperator::isPluginOperator($report->getAssignedOperator()))
+            {
+                $parts[] = 'assigned';
             }
 
             return hash('sha256', (string)json_encode($parts));
