@@ -171,6 +171,10 @@ An opened report is reviewed when it's unassigned or assigned to a bot, a disabl
 report assigned to a person is theirs, unless `reports.include_assigned` is on. Reports about bots (`is_bot` in their
 metadata) and reports without any text or attachment are left to the operators.
 
+Assigning an opened report to the `FederationJevGuard` operator queues it for review, and it's reviewed again even if
+the plugin was uncertain about it before. The plugin's operator starts without the automatic assignment of reports; an
+administrator can turn it on (`auto_assign_reports`, `auto_assign_automated_reports`) and the plugin keeps that choice.
+
 A confident report is assigned to the plugin's operator and closed with its classification, with the same effect as an
 operator closing it: its unclassified evidence is classified, the server's configured reputation is applied, and the
 closure is recorded in the audit log. A report closed as spam queues its entity for a [blacklist review](#blacklisting-entities).
