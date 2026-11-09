@@ -44,8 +44,7 @@
             $this->assertSame(ContentScanHandler::class, $plugin->getEventHandlers(EventType::CONTENT_SCAN)[0]->getClass());
             $this->assertSame(QueryEntityHandler::class, $plugin->getEventHandlers(EventType::QUERY_ENTITY)[0]->getClass());
             $this->assertSame(RecordChangeHandler::class, $plugin->getEventHandlers(EventType::RECORD_CHANGE)[0]->getClass());
-            $this->assertEqualsCanonicalizing(['REPORT_CREATED', 'REPORT_CLOSED', 'EVIDENCE_CREATED', 'ATTACHMENT_CREATED', 'ENTITY_UPDATED', 'ENTITY_DELETED', 'BLACKLIST_LIFTED', 'BLACKLIST_DELETED'],
-                $plugin->getEventHandlers(EventType::RECORD_CHANGE)[0]->getFilter());
+            $this->assertEqualsCanonicalizing(['REPORT_CREATED', 'REPORT_OPERATOR_ASSIGNED', 'REPORT_CLOSED', 'EVIDENCE_CREATED', 'ATTACHMENT_CREATED', 'ENTITY_UPDATED', 'ENTITY_DELETED', 'BLACKLIST_LIFTED', 'BLACKLIST_DELETED'], $plugin->getEventHandlers(EventType::RECORD_CHANGE)[0]->getFilter());
             $this->assertSame([], $plugin->getEventHandlers(EventType::AUDIT_LOG));
         }
 
