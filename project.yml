@@ -52,7 +52,7 @@ build_configurations:
           -
             event: RECORD_CHANGE
             class: \FederationJevGuard\Handlers\RecordChangeHandler::class
-            filter: REPORT_CREATED, REPORT_CLOSED, EVIDENCE_CREATED, ATTACHMENT_CREATED, ENTITY_UPDATED, ENTITY_DELETED, BLACKLIST_LIFTED, BLACKLIST_DELETED
+            filter: REPORT_CREATED, REPORT_OPERATOR_ASSIGNED, REPORT_CLOSED, EVIDENCE_CREATED, ATTACHMENT_CREATED, ENTITY_UPDATED, ENTITY_DELETED, BLACKLIST_LIFTED, BLACKLIST_DELETED
   -
     name: release
     output: 'target/release/${ASSEMBLY.PACKAGE}.ncc'
