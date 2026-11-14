@@ -55,6 +55,7 @@
             // What the plugin reviews
             self::$configuration->setDefault('reports.enabled', true, 'FEDERATION_JEVGUARD_REPORTS_ENABLED');
             self::$configuration->setDefault('reports.include_assigned', false, 'FEDERATION_JEVGUARD_REPORTS_INCLUDE_ASSIGNED');
+            self::$configuration->setDefault('reports.maintenance_batch', ReviewConfiguration::MAINTENANCE_BATCH, 'FEDERATION_JEVGUARD_REPORTS_MAINTENANCE_BATCH');
             self::$configuration->setDefault('evidence.enabled', true, 'FEDERATION_JEVGUARD_EVIDENCE_ENABLED');
             self::$configuration->setDefault('blacklist.enabled', true, 'FEDERATION_JEVGUARD_BLACKLIST_ENABLED');
             self::$configuration->setDefault('blacklist.min_reports', 3, 'FEDERATION_JEVGUARD_BLACKLIST_MIN_REPORTS');
