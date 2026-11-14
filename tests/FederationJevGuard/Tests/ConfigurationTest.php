@@ -75,6 +75,7 @@
             $this->assertSame([IncidentType::SPAM, IncidentType::SCAM, IncidentType::PHISHING, IncidentType::MALWARE], Configuration::getConcerns());
             $this->assertTrue(Configuration::getReviewConfiguration()->isReportsEnabled());
             $this->assertFalse(Configuration::getReviewConfiguration()->isIncludeAssigned());
+            $this->assertSame(500, Configuration::getReviewConfiguration()->getMaintenanceBatch());
             $this->assertTrue(Configuration::getReviewConfiguration()->isEvidenceEnabled());
             $this->assertTrue(Configuration::getBlacklistConfiguration()->isEnabled());
             $this->assertSame(3, Configuration::getBlacklistConfiguration()->getMinReports());
