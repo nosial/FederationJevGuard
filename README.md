@@ -349,18 +349,19 @@ tokens only, the `jevguard_usage` table keeps the use of each day. Every decisio
 
 ### Reviews
 
-| Name                       | Environment Variable                           | Type     | Default Value | Description                                                                 |
-|----------------------------|------------------------------------------------|----------|---------------|-----------------------------------------------------------------------------|
-| `reports.enabled`          | `FEDERATION_JEVGUARD_REPORTS_ENABLED`          | boolean  | `true`        | Close opened reports                                                        |
-| `reports.include_assigned` | `FEDERATION_JEVGUARD_REPORTS_INCLUDE_ASSIGNED` | boolean  | `false`       | Also take over reports assigned to people                                   |
-| `evidence.enabled`         | `FEDERATION_JEVGUARD_EVIDENCE_ENABLED`         | boolean  | `true`        | Classify unclassified evidence that belongs to no report                    |
-| `blacklist.enabled`        | `FEDERATION_JEVGUARD_BLACKLIST_ENABLED`        | boolean  | `true`        | Blacklist repeat offenders                                                  |
-| `blacklist.min_reports`    | `FEDERATION_JEVGUARD_BLACKLIST_MIN_REPORTS`    | integer  | `3`           | The closed spam reports an entity needs before the model is asked about it  |
-| `blacklist.duration`       | `FEDERATION_JEVGUARD_BLACKLIST_DURATION`       | duration | `7d`          | A first blacklist record, at least an hour                                  |
-| `blacklist.max_duration`   | `FEDERATION_JEVGUARD_BLACKLIST_MAX_DURATION`   | duration | `90d`         | The longest blacklist record                                                |
-| `scanning.enabled`         | `FEDERATION_JEVGUARD_SCANNING_ENABLED`         | boolean  | `true`        | Classify the messages of authenticated scans                                |
-| `images.enabled`           | `FEDERATION_JEVGUARD_IMAGES_ENABLED`           | boolean  | `true`        | Judge images and give them to the model, needs GD and an endpoint with images |
-| `questions.path`           | `FEDERATION_JEVGUARD_QUESTIONS_PATH`           | string   | Empty         | A [question file](#what-the-model-is-asked) of your own, empty for the bundled questions |
+| Name                        | Environment Variable                            | Type     | Default Value | Description                                                                              |
+|-----------------------------|-------------------------------------------------|----------|---------------|------------------------------------------------------------------------------------------|
+| `reports.enabled`           | `FEDERATION_JEVGUARD_REPORTS_ENABLED`           | boolean  | `true`        | Close opened reports                                                                     |
+| `reports.include_assigned`  | `FEDERATION_JEVGUARD_REPORTS_INCLUDE_ASSIGNED`  | boolean  | `false`       | Also take over reports assigned to people                                                |
+| `reports.maintenance_batch` | `FEDERATION_JEVGUARD_REPORTS_MAINTENANCE_BATCH` | integer  | `500`         | The most opened reports (the newest first) every maintenance run queues                  |
+| `evidence.enabled`          | `FEDERATION_JEVGUARD_EVIDENCE_ENABLED`          | boolean  | `true`        | Classify unclassified evidence that belongs to no report                                 |
+| `blacklist.enabled`         | `FEDERATION_JEVGUARD_BLACKLIST_ENABLED`         | boolean  | `true`        | Blacklist repeat offenders                                                               |
+| `blacklist.min_reports`     | `FEDERATION_JEVGUARD_BLACKLIST_MIN_REPORTS`     | integer  | `3`           | The closed spam reports an entity needs before the model is asked about it               |
+| `blacklist.duration`        | `FEDERATION_JEVGUARD_BLACKLIST_DURATION`        | duration | `7d`          | A first blacklist record, at least an hour                                               |
+| `blacklist.max_duration`    | `FEDERATION_JEVGUARD_BLACKLIST_MAX_DURATION`    | duration | `90d`         | The longest blacklist record                                                             |
+| `scanning.enabled`          | `FEDERATION_JEVGUARD_SCANNING_ENABLED`          | boolean  | `true`        | Classify the messages of authenticated scans                                             |
+| `images.enabled`            | `FEDERATION_JEVGUARD_IMAGES_ENABLED`            | boolean  | `true`        | Judge images and give them to the model, needs GD and an endpoint with images            |
+| `questions.path`            | `FEDERATION_JEVGUARD_QUESTIONS_PATH`            | string   | Empty         | A [question file](#what-the-model-is-asked) of your own, empty for the bundled questions |
 
 The plugin never blacklists permanently, a duration of `never` falls back to the default.
 
