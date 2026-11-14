@@ -14,6 +14,7 @@
 
         private bool $reportsEnabled;
         private bool $includeAssigned;
+        private int $maintenanceBatch;
         private bool $evidenceEnabled;
 
         /**
@@ -26,6 +27,7 @@
         {
             $this->reportsEnabled = ConfigurationValues::parseBool($reports['enabled'] ?? null, true);
             $this->includeAssigned = ConfigurationValues::parseBool($reports['include_assigned'] ?? null, false);
+            $this->maintenanceBatch = max(1, (int)($reports['maintenance_batch'] ?? self::MAINTENANCE_BATCH));
             $this->evidenceEnabled = ConfigurationValues::parseBool($evidence['enabled'] ?? null, true);
         }
 
@@ -48,6 +50,16 @@
         public function isIncludeAssigned(): bool
         {
             return $this->includeAssigned;
+        }
+
+        /**
+         * Returns the most opened reports every maintenance run queues, the newest first
+         *
+         * @return int The number of reports
+         */
+        public function getMaintenanceBatch(): int
+        {
+            return $this->maintenanceBatch;
         }
 
         /**
