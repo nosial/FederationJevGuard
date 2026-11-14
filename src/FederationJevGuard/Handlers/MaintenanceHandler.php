@@ -110,7 +110,8 @@
 
             if(Configuration::getReviewConfiguration()->isReportsEnabled())
             {
-                for($page = 1; $page <= $pages; $page++)
+                $reportPages = (int)ceil(Configuration::getReviewConfiguration()->getMaintenanceBatch() / self::PAGE_SIZE);
+                for($page = 1; $page <= $reportPages; $page++)
                 {
                     $reports = ReportManager::getReports(self::PAGE_SIZE, $page, ReportCategory::OPENED);
                     foreach($reports as $report)
