@@ -5,9 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.2] - Ongoing
+## [1.0.2] - 2026-11-14
 
-This is an ongoing update
+This update introduces a minor bug fix
+
+### Fixed
+ - Entity metadata is no longer treated as a fact: reports about, evidence from and the blacklisting of entities whose
+   metadata claims `is_bot` are reviewed like any other, the metadata is only part of what the model is shown
 
 
 
