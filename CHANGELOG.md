@@ -5,9 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.3] - Ongoing
+## [1.0.3] - 2026-11-14
 
-This is an ongoing update
+This update introduces new configuration properties for the plugin
+
+### Added
+ - `reports.maintenance_batch` (`FEDERATION_JEVGUARD_REPORTS_MAINTENANCE_BATCH`, 500 by default) sets how many opened
+   reports every maintenance run queues
 
 
 
