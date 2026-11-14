@@ -58,7 +58,7 @@
         {
             $configuration = Configuration::getBlacklistConfiguration();
             $entity = EntitiesManager::getEntityByUuid($uuid);
-            if($entity === null || $entity->isWhitelisted() || ContextBuilder::isBot($entity))
+            if($entity === null || $entity->isWhitelisted())
             {
                 return null;
             }
