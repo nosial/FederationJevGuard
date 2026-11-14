@@ -36,7 +36,7 @@
          *
          * @param string $uuid The UUID of the evidence record
          * @return DecisionRecord|null The decision, null if the evidence doesn't need a review (eg; it's classified,
-         *                             belongs to a report, is about a bot or didn't change since its last decision)
+         *                             belongs to a report or didn't change since its last decision)
          * @throws SystemOneException If the request to the System One endpoint failed
          * @throws BudgetExceededException If the daily token budget is used up
          * @throws ReviewException If the plugin operator is unavailable
@@ -52,7 +52,7 @@
             }
 
             $entity = EntitiesManager::getEntityByUuid($evidence->getEntityUuid());
-            if($entity === null || ContextBuilder::isBot($entity))
+            if($entity === null)
             {
                 return null;
             }
