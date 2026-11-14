@@ -46,7 +46,7 @@
          *
          * @param string $uuid The UUID of the report
          * @return DecisionRecord|null The decision, null if the report doesn't need a review (eg; it's closed, assigned
-         *                             to a person, about a bot, or unchanged since its last decision)
+         *                             to a person, or unchanged since its last decision)
          * @throws SystemOneException If the request to the System One endpoint failed
          * @throws BudgetExceededException If the daily token budget is used up
          * @throws ReviewException If the plugin operator is unavailable
@@ -62,11 +62,6 @@
             }
 
             $entity = $report->getReportingEntity() !== null ? EntitiesManager::getEntityByUuid($report->getReportingEntity()) : null;
-            if($entity !== null && ContextBuilder::isBot($entity))
-            {
-                Logger::log()->debug(sprintf('The report %s is about a bot, it is left to the operators', $uuid));
-                return null;
-            }
 
             $evidence = EvidenceManager::getEvidenceByReport($uuid, self::MAX_EVIDENCE, includeConfidential: true);
             if(!self::hasContent($evidence))
