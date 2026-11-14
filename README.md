@@ -168,8 +168,8 @@ too bare to be sure (eg; "check my bio"), `MALICIOUS` is clearly spam.
 ### Reports
 
 An opened report is reviewed when it's unassigned or assigned to a bot, a disabled operator or the plugin itself. A
-report assigned to a person is theirs, unless `reports.include_assigned` is on. Reports about bots (`is_bot` in their
-metadata) and reports without any text or attachment are left to the operators.
+report assigned to a person is theirs, unless `reports.include_assigned` is on. Reports without any text or attachment
+are left to the operators.
 
 Assigning an opened report to the `FederationJevGuard` operator queues it for review, and it's reviewed again even if
 the plugin was uncertain about it before. The plugin's operator starts without the automatic assignment of reports; an
