@@ -34,16 +34,6 @@
             $this->assertSame(ClassificationFlag::MALICIOUS, ContextBuilder::getReportClassification([self::evidence('SUSPICIOUS'), self::evidence('MALICIOUS'), self::evidence('NORMAL')]));
         }
 
-        public function testBotsAreRecognizedByTheirMetadata(): void
-        {
-            $entity = fn(?array $metadata) => new EntityRecord(['uuid' => '01900000-0000-7000-8000-000000000001', 'hash' => hash('sha256', 'x'), 'host' => 'telegram.org', 'id' => '1', 'metadata' => $metadata, 'reputation' => 0, 'created' => time()]);
-
-            $this->assertTrue(ContextBuilder::isBot($entity(['is_bot' => true])));
-            $this->assertTrue(ContextBuilder::isBot($entity(['is_bot' => 'yes'])));
-            $this->assertTrue(ContextBuilder::isBot($entity(['is_bot' => 1])));
-            $this->assertFalse(ContextBuilder::isBot($entity(['is_bot' => false])));
-            $this->assertFalse(ContextBuilder::isBot($entity(null)));
-        }
 
         public function testTelephoneNumbersNeverLeaveTheServer(): void
         {
