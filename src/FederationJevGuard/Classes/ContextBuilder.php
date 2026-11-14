@@ -44,7 +44,6 @@
                 'address' => self::address($entity),
                 'reputation' => $entity->getReputation(),
                 'whitelisted' => $entity->isWhitelisted(),
-                'bot' => self::isBot($entity) ? true : null,
                 'first_seen_days_ago' => self::daysAgo($entity->getCreated()),
                 'metadata' => self::metadata($entity->getMetadata(), $limits),
             ]);
@@ -318,23 +317,6 @@
             return $worst;
         }
 
-        /**
-         * Checks if an entity is flagged as a bot in its metadata (is_bot, eg; a Telegram bot account). Bots are never
-         * judged nor blacklisted by the plugin
-         *
-         * @param EntityRecord $entity The entity
-         * @return bool True for a bot
-         */
-        public static function isBot(EntityRecord $entity): bool
-        {
-            $value = $entity->getMetadata()['is_bot'] ?? null;
-            if(is_string($value))
-            {
-                return in_array(strtolower(trim($value)), ['1', 'true', 'yes'], true);
-            }
-
-            return $value === true || $value === 1;
-        }
 
         /**
          * Checks if a blacklist record is active: not lifted and not expired
