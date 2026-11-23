@@ -61,7 +61,8 @@
          */
         public function getRetryAfter(): ?int
         {
-            return $this->getPrevious() instanceof SystemOneException && $previous->getMessage() === 'retry-after' && $previous->getCode() > 0 ? $previous->getCode() : null;
+            $previous = $this->getPrevious();
+            return $previous instanceof SystemOneException && $previous->getMessage() === 'retry-after' && $previous->getCode() > 0 ? $previous->getCode() : null;
         }
 
         /**
