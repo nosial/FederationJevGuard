@@ -132,7 +132,8 @@
             }
             catch(SystemOneException|ReviewException|DatabaseOperationException $e)
             {
-                Logger::log()->warning('The scan continues without a classification of FederationJevGuard: ' . $e->getMessage());
+                $repeat = ($e instanceof SystemOneException || $e instanceof ReviewException) && $e->isRepeat();
+                Logger::log()->{$repeat ? 'debug' : 'warning'}('The scan continues without a classification of FederationJevGuard: ' . $e->getMessage());
                 return;
             }
 
