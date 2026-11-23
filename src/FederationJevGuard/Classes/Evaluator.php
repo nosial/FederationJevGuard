@@ -18,6 +18,7 @@
         public const int IMAGE_TOKENS = 1600;
         private const int CONTEXT_RETRIES = 2;
         private const int MIN_BUDGET = 800;
+        private const int RATE_LIMIT_RATELIMIT = 60;
 
         /**
          * Asks the questions about a state
@@ -36,6 +37,7 @@
         {
             $configuration = Configuration::getSystemOneConfiguration();
             self::checkBudget($configuration);
+            self::checkRateLimit($configuration);
 
             $budget = self::getBudget($questions, $configuration);
             for($attempt = 0; ; $attempt++)
@@ -49,6 +51,13 @@
                 catch(SystemOneException $e)
                 {
                     self::recordUsage(0, 0, true);
+                    if($e->isRateLimited())
+                    {
+                        $seconds = $e->getRetryAfter() ?? self::RATE_LIMIT_RATELIMIT;
+                        $e->setRepeat(!Ratelimit::start(self::getRateLimitKey($configuration), $seconds));
+                        throw $e;
+                    }
+
                     if(!$e->isContextExceeded() || $attempt >= self::CONTEXT_RETRIES || $budget <= self::MIN_BUDGET)
                     {
                         throw $e;
@@ -125,10 +134,50 @@
          */
         private static function checkBudget(SystemOneConfiguration $configuration): void
         {
-            if($configuration->getDailyTokens() > 0 && UsageManager::getToday()['input_tokens'] >= $configuration->getDailyTokens())
+            if($configuration->getDailyTokens() <= 0)
             {
-                throw new BudgetExceededException(sprintf('The daily budget of %d input tokens is used up', $configuration->getDailyTokens()));
+                return;
             }
+
+            $key = sprintf('budget:%d', $configuration->getDailyTokens());
+            $message = sprintf('The daily budget of %d input tokens is used up', $configuration->getDailyTokens());
+            if(Ratelimit::until($key) !== null)
+            {
+                throw new BudgetExceededException($message, 0, null, true);
+            }
+
+            if(UsageManager::getToday()['input_tokens'] >= $configuration->getDailyTokens())
+            {
+                $tomorrow = (int)gmmktime(0, 0, 0, (int)gmdate('n'), (int)gmdate('j') + 1, (int)gmdate('Y'));
+                throw new BudgetExceededException($message, 0, null, !Ratelimit::start($key, $tomorrow - time()));
+            }
+        }
+
+        /**
+         * Checks if the endpoint was rate limited recently
+         *
+         * @param SystemOneConfiguration $configuration The endpoint
+         * @return void
+         * @throws SystemOneException A repeat of the rate limit if its cooldown is active
+         */
+        private static function checkRateLimit(SystemOneConfiguration $configuration): void
+        {
+            $until = Ratelimit::until(self::getRateLimitKey($configuration));
+            if($until !== null)
+            {
+                throw (new SystemOneException(sprintf('The System One endpoint is rate limited for %d more second(s)', max(1, $until - time())), 429))->setRepeat();
+            }
+        }
+
+        /**
+         * Returns the key of the rate limit cooldown of an endpoint and its credentials
+         *
+         * @param SystemOneConfiguration $configuration The endpoint
+         * @return string The key
+         */
+        public static function getRateLimitKey(SystemOneConfiguration $configuration): string
+        {
+            return 'rate_limit:' . hash('sha256', $configuration->getEndpoint() . '|' . ($configuration->getApiKey() ?? ''));
         }
 
         /**
