@@ -69,10 +69,16 @@
                 return null;
             }
 
+            $handed = PluginOperator::isPluginOperator($report->getAssignedOperator());
             $fingerprint = self::fingerprint($report, $evidence);
             $latest = DecisionManager::getLatestDecision(SubjectType::REPORT, $uuid);
             if($latest !== null && $latest->getInputHash() === $fingerprint)
             {
+                if($handed && $latest->getOutcome() === DecisionOutcome::UNCERTAIN && !Configuration::isDryRun())
+                {
+                    return self::closeUncertain($uuid, $entity?->getUuid(), $latest, $fingerprint);
+                }
+
                 return null;
             }
 
@@ -118,6 +124,23 @@
                 else
                 {
                     $reason = 'the report changed before it could be closed';
+                }
+            }
+            elseif($handed)
+            {
+                if(Configuration::isDryRun())
+                {
+                    $outcome = DecisionOutcome::PREVIEWED;
+                    $reason = sprintf('would close without a classification, %s', $reason);
+                }
+                elseif(self::close($uuid, null))
+                {
+                    $outcome = DecisionOutcome::APPLIED;
+                    $reason = sprintf('closed without a classification, %s', $reason);
+                }
+                else
+                {
+                    $reason = sprintf('the report changed before it could be closed, %s', $reason);
                 }
             }
 
@@ -210,17 +233,55 @@
         }
 
         /**
-         * Closes a report with a classification, after checking under a lock that it's still opened and reviewable. The
-         * plugin operator takes the report over to close it, OFD only lets the assigned operator close it
+         * Closes a handed report the plugin was uncertain about before, without a classification and without asking
+         * the model again. The new decision keeps the verdict of the uncertain one
          *
          * @param string $uuid The UUID of the report
-         * @param ClassificationFlag $flag The classification
+         * @param string|null $entity The UUID of the reported entity
+         * @param DecisionRecord $uncertain The uncertain decision about the report
+         * @param string $fingerprint The fingerprint of the report
+         * @return DecisionRecord|null The decision, null if the report changed before it could be closed
+         * @throws ReviewException If the plugin operator is unavailable or the report is being reviewed elsewhere
+         * @throws DatabaseOperationException If there is an error with the database
+         * @throws InvalidArgumentException If FederationLib rejects the closure
+         */
+        private static function closeUncertain(string $uuid, ?string $entity, DecisionRecord $uncertain, string $fingerprint): ?DecisionRecord
+        {
+            if(!self::close($uuid, null))
+            {
+                return null;
+            }
+
+            $reason = sprintf('closed without a classification, %s', $uncertain->getReason() ?? 'the model was uncertain');
+            $decision = DecisionManager::record(
+                subjectType: SubjectType::REPORT,
+                subject: $uuid,
+                entity: $entity,
+                outcome: DecisionOutcome::APPLIED,
+                verdict: $uncertain->getVerdict(),
+                probability: $uncertain->getProbability(),
+                reason: $reason,
+                inputHash: $fingerprint
+            );
+
+            Logger::log()->info(sprintf('Report %s: %s', $uuid, $reason));
+            return DecisionManager::getDecision($decision);
+        }
+
+        /**
+         * Closes a report, after checking under a lock that it's still opened and reviewable. The plugin operator takes
+         * the report over to close it with a classification, OFD only lets the assigned operator close it. A report is
+         * only closed without a classification while it's still assigned to the plugin operator, a report that was
+         * unassigned in the meantime is left to the operators
+         *
+         * @param string $uuid The UUID of the report
+         * @param ClassificationFlag|null $flag The classification, null to close it without one
          * @return bool True if the report was closed, false if it changed in the meantime
          * @throws ReviewException If the plugin operator is unavailable or the report is being reviewed elsewhere
          * @throws DatabaseOperationException If there is an error with the database
          * @throws InvalidArgumentException If FederationLib rejects the closure
          */
-        private static function close(string $uuid, ClassificationFlag $flag): bool
+        private static function close(string $uuid, ?ClassificationFlag $flag): bool
         {
             $lock = DatabaseLock::getSubjectLock(SubjectType::REPORT->value, $uuid);
             if(!DatabaseLock::acquire($lock, 10))
@@ -233,6 +294,11 @@
                 $operator = PluginOperator::get();
                 $report = ReportManager::getReport($uuid);
                 if($report === null || !$report->isOpened() || !self::isReviewable($report))
+                {
+                    return false;
+                }
+
+                if($flag === null && $report->getAssignedOperator() !== $operator->getUuid())
                 {
                     return false;
                 }
