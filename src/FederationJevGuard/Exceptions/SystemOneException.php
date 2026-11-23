@@ -7,6 +7,8 @@
 
     class SystemOneException extends Exception
     {
+        private bool $repeat = false;
+
         /**
          * SystemOneException constructor.
          *
@@ -17,6 +19,49 @@
         public function __construct(string $message, int $status=0, ?Throwable $previous=null)
         {
             parent::__construct($message, $status, $previous);
+        }
+
+        /**
+         * Returns True if the failure repeats one that was reported already (eg; while a rate limit ratelimit is
+         * active), it's only logged for debugging
+         *
+         * @return bool True if a repeat
+         */
+        public function isRepeat(): bool
+        {
+            return $this->repeat;
+        }
+
+        /**
+         * Marks the failure as a repeat of one that was reported already
+         *
+         * @param bool $repeat True if a repeat
+         * @return SystemOneException The exception
+         */
+        public function setRepeat(bool $repeat=true): SystemOneException
+        {
+            $this->repeat = $repeat;
+            return $this;
+        }
+
+        /**
+         * Returns True if the endpoint is rate limited or overloaded (HTTP 429 or 529)
+         *
+         * @return bool True if rate limited
+         */
+        public function isRateLimited(): bool
+        {
+            return $this->getCode() === 429 || $this->getCode() === 529;
+        }
+
+        /**
+         * Returns the seconds the endpoint asked to wait before trying again (its retry-after header)
+         *
+         * @return int|null The seconds, null if it didn't say
+         */
+        public function getRetryAfter(): ?int
+        {
+            return $this->getPrevious() instanceof SystemOneException && $previous->getMessage() === 'retry-after' && $previous->getCode() > 0 ? $previous->getCode() : null;
         }
 
         /**
