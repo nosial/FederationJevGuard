@@ -70,11 +70,18 @@
                         }
                         catch(BudgetExceededException $e)
                         {
-                            Logger::log()->info($e->getMessage() . ', the queue is reviewed again tomorrow (UTC)');
+                            Logger::log()->{$e->isRepeat() ? 'debug' : 'info'}($e->getMessage() . ', the queue is reviewed again tomorrow (UTC)');
                             break 2;
                         }
                         catch(SystemOneException $e)
                         {
+                            if($e->isRateLimited())
+                            {
+                                $result['failed']++;
+                                Logger::log()->{$e->isRepeat() ? 'debug' : 'warning'}('The System One endpoint is rate limited, the queue is reviewed again later: ' . $e->getMessage());
+                                break 2;
+                            }
+
                             $result['failed']++;
                             self::handleFailure($item, $e);
                         }
