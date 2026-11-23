@@ -9,7 +9,7 @@ repository:
 assembly:
   name: FederationJevGuard
   package: net.nosial.federation_jevguard
-  version: 1.0.4
+  version: 1.0.5
   url: 'https://github.com/nosial/FederationJevGuard'
   license: 'MIT'
   description: 'FederationJevGuard is a FederationLib plugin that reviews reports, evidence and entities with a System One model such as TypeSafe Jev'
