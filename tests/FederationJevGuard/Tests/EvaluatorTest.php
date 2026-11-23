@@ -4,10 +4,13 @@
 
     namespace FederationJevGuard\Tests;
 
+    use FederationJevGuard\Classes\Configuration;
     use FederationJevGuard\Classes\Configuration\SystemOneConfiguration;
+    use FederationJevGuard\Classes\Ratelimit;
     use FederationJevGuard\Classes\Evaluator;
     use FederationJevGuard\Classes\ImageCollector;
     use FederationJevGuard\Classes\Questions\ClassificationQuestions;
+    use FederationJevGuard\Exceptions\BudgetExceededException;
     use FederationJevGuard\Exceptions\SystemOneException;
     use FederationJevGuard\FederationJevGuard;
     use FederationJevGuard\Objects\Limits;
@@ -25,10 +28,13 @@
         protected function setUp(): void
         {
             PluginConfiguration::reset();
+            Ratelimit::clear(Evaluator::getRateLimitKey(Configuration::getSystemOneConfiguration()));
         }
 
         protected function tearDown(): void
         {
+            Ratelimit::clear(Evaluator::getRateLimitKey(Configuration::getSystemOneConfiguration()));
+            Ratelimit::clear('budget:1000');
             FederationJevGuard::setClient(null);
             PluginConfiguration::reset();
         }
@@ -93,5 +99,62 @@
 
             $this->expectException(SystemOneException::class);
             Evaluator::evaluate(self::build(1), ClassificationQuestions::build('messages', [], '', false));
+        }
+
+        public function testRateLimitStartsARatelimit(): void
+        {
+            $client = new FakeSystemOneClient(fn() => throw new SystemOneException('rate limited', 429, new SystemOneException('retry-after', 30)));
+            FederationJevGuard::setClient($client);
+            $questions = ClassificationQuestions::build('messages', [], '', false);
+
+            try
+            {
+                Evaluator::evaluate(self::build(1), $questions);
+                $this->fail('The rate limit was not thrown');
+            }
+            catch(SystemOneException $e)
+            {
+                $this->assertTrue($e->isRateLimited());
+                $this->assertFalse($e->isRepeat());
+            }
+
+            $until = Ratelimit::until(Evaluator::getRateLimitKey(Configuration::getSystemOneConfiguration()));
+            $this->assertNotNull($until);
+            $this->assertLessThanOrEqual(time() + 30, $until);
+
+            // While the ratelimit lasts the endpoint isn't asked again, the failure is a repeat
+            try
+            {
+                Evaluator::evaluate(self::build(1), $questions);
+                $this->fail('The rate limit cooldown was not thrown');
+            }
+            catch(SystemOneException $e)
+            {
+                $this->assertTrue($e->isRateLimited());
+                $this->assertTrue($e->isRepeat());
+            }
+
+            $this->assertCount(1, $client->requests);
+        }
+
+        public function testUsedUpBudgetIsRemembered(): void
+        {
+            // The unit tests have no database, the cooldown alone has to answer without reading the use
+            PluginConfiguration::apply(['systemone_daily_tokens' => '1000']);
+            Ratelimit::start('budget:1000', 60);
+            $client = new FakeSystemOneClient(fn($state, $questions) => Answers::classification($questions, 'NORMAL'));
+            FederationJevGuard::setClient($client);
+
+            try
+            {
+                Evaluator::evaluate(self::build(1), ClassificationQuestions::build('messages', [], '', false));
+                $this->fail('The used up budget was not thrown');
+            }
+            catch(BudgetExceededException $e)
+            {
+                $this->assertTrue($e->isRepeat());
+            }
+
+            $this->assertCount(0, $client->requests);
         }
     }

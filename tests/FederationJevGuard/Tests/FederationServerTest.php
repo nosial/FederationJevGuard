@@ -149,6 +149,37 @@
             $this->assertNull($this->client->getReport($report)->getAssignedOperator());
         }
 
+        public function testUncertainHandedReportIsClosedWithoutClassification(): void
+        {
+            $report = $this->report($this->entity(), 'check my bio');
+            $this->client->assignOperatorToReport($report, $this->operator()->getUuid());
+
+            self::maintenance();
+
+            $this->assertFalse($this->client->getReport($report)->isOpened());
+
+            // Closed without a classification, its evidence stays unclassified
+            $evidence = $this->client->listReportEvidenceRecords($report, includeConfidential: true);
+            $this->assertNull($evidence[0]->getClassificationFlag());
+        }
+
+        public function testUncertainReportHandedLaterIsClosedWithoutClassification(): void
+        {
+            $report = $this->report($this->entity(), 'check my bio');
+
+            // The plugin is uncertain about it and leaves it open
+            self::maintenance();
+            $this->assertTrue($this->client->getReport($report)->isOpened());
+
+            // Handed to the plugin afterwards, it's closed without a classification
+            $this->client->assignOperatorToReport($report, $this->operator()->getUuid());
+            self::maintenance();
+
+            $this->assertFalse($this->client->getReport($report)->isOpened());
+            $evidence = $this->client->listReportEvidenceRecords($report, includeConfidential: true);
+            $this->assertNull($evidence[0]->getClassificationFlag());
+        }
+
         public function testStandaloneEvidenceIsClassified(): void
         {
             $evidence = $this->client->submitEvidence($this->entity(), 'JEVGUARD_TEST_SPAM Escort service available, see my channel');
