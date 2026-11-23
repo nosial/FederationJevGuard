@@ -133,7 +133,7 @@ wording changes what other servers' users are blocked for: test a custom file in
 ### When the plugin acts
 
 The plugin acts only when every check passes, otherwise the decision is recorded as `UNCERTAIN` and the subject is
-left to the operators:
+left to the operators (a report [handed to the plugin](#reports) is closed without a classification instead):
 
  - **Both orders of the options agree.** Models can lean towards the first option, an answer that changes with the
    order isn't trusted. The probabilities of both orders are averaged.
@@ -171,13 +171,17 @@ An opened report is reviewed when it's unassigned or assigned to a bot, a disabl
 report assigned to a person is theirs, unless `reports.include_assigned` is on. Reports without any text or attachment
 are left to the operators.
 
-Assigning an opened report to the `FederationJevGuard` operator queues it for review, and it's reviewed again even if
-the plugin was uncertain about it before. The plugin's operator starts without the automatic assignment of reports; an
-administrator can turn it on (`auto_assign_reports`, `auto_assign_automated_reports`) and the plugin keeps that choice.
+Assigning an opened report to the `FederationJevGuard` operator hands it to the plugin and queues it for review. A
+handed report is always closed: with its classification when the plugin is confident, otherwise without a
+classification (its evidence stays unclassified and no reputation is applied). A handed report the plugin was uncertain
+about before is closed without a classification without asking the model again. The plugin's operator starts without
+the automatic assignment of reports; an administrator can turn it on (`auto_assign_reports`,
+`auto_assign_automated_reports`) and every report assigned to it is then handed to the plugin.
 
-A confident report is assigned to the plugin's operator and closed with its classification, with the same effect as an
+A confident report that wasn't handed to the plugin is assigned to the plugin's operator and closed with its classification, with the same effect as an
 operator closing it: its unclassified evidence is classified, the server's configured reputation is applied, and the
-closure is recorded in the audit log. A report closed as spam queues its entity for a [blacklist review](#blacklisting-entities).
+closure is recorded in the audit log. An uncertain report that wasn't handed to the plugin is left open for the
+operators. A report closed as spam queues its entity for a [blacklist review](#blacklisting-entities).
 
 ### Evidence
 
@@ -248,6 +252,14 @@ A subject is only reviewed again once it changes (eg; a report gets new evidence
 model is never asked twice about the same thing. A review that failed because the endpoint was unreachable or
 overloaded is tried again later, waiting longer each time.
 
+A rate limit (`429`/`529` after the client's own retries) isn't the subject's fault: the review stays due without
+counting as an attempt, the rest of the queue waits for the next maintenance run, and the endpoint isn't asked again for
+as long as it asked (its `retry-after`, 60 seconds if it didn't say). Likewise a used up `systemone.daily_tokens` budget is
+remembered until the day ends (UTC). Either is logged once, the reviews and content scans skipped meanwhile are only logged
+for debugging. These ratelimits are shared by every process through FederationLib's Redis cache when it's enabled
+(`FEDERATION_REDIS_*`), otherwise through APCu (outside the CLI), and otherwise they only cover the process that ran into
+them. Raising `systemone.daily_tokens` ends the budget's cooldown.
+
 ### Untrusted content
 
 Everything clients submit, through scans, evidence, reports or attachments, is treated like malware:
@@ -315,7 +327,8 @@ The plugin registers no routes. Its decisions are kept in its `jevguard_decision
 the latest decision about an entity is added to the metadata of its queries (`jevguard_verdict`, `jevguard_outcome`,
 `jevguard_probability` and `jevguard_decided`).
 
-A decision has an `outcome`: `APPLIED` (acted on), `PREVIEWED` (would have been acted on), `UNCERTAIN` (left to the
+A decision has an `outcome`: `APPLIED` (acted on, including a handed report closed without a classification),
+`PREVIEWED` (would have been acted on), `UNCERTAIN` (left to the
 operators), `DECLINED` (the model is confident nothing should be done) or `SUPPRESSED` (an operator lifted or deleted a
 blacklist record of the entity).
 

@@ -5,9 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.4] - Ongoing
+## [1.0.4] - 2026-11-23
 
-This is an ongoing update
+This update introduces a rate limit handler
+
+### Changed
+ - A rate limit of the System One endpoint and a used up daily token budget are remembered (in FederationLib's Redis
+   cache, or APCu, or the process) so they're logged once instead of by every content scan and queued review; while they
+   last no request is made, and a rate limited review stays due without counting as an attempt
+ - A report assigned to the `FederationJevGuard` operator is always closed: when the plugin is uncertain about it, it's
+   closed without a classification instead of staying open. Reports it was uncertain about before are closed without
+   a classification on their next review, without asking the model again
 
 
 
